@@ -6,11 +6,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.stream.messaging.Processor;
-import org.springframework.cloud.stream.messaging.Sink;
 import org.springframework.cloud.stream.test.binder.MessageCollector;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.GenericMessage;
 
+import java.math.BigDecimal;
 import java.util.concurrent.BlockingQueue;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,8 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class SpringKafkaJdbcSinkIntegrationTests {
     @Autowired
     private Processor channels;
-//    @Autowired
-//    private InputDestination input;
 
     @Autowired
     private MessageCollector collector;
@@ -30,17 +28,19 @@ public class SpringKafkaJdbcSinkIntegrationTests {
     @Test
     public void testMessages() throws JsonProcessingException {
         BlockingQueue<Message<?>> messages = collector.forChannel(channels.output());
-        String client = "test client name";
-        String orderId = "test order id";
-        String product = "test product name";
-        Float amount = 10.05f;
 
-        ProductABillingMessage productABillingMessage = new ProductABillingMessage(client, orderId, product, amount);
-        this.channels.input().send(new GenericMessage<>(productABillingMessage));
+        BillingMessage message = BillingMessage.builder()
+                .client("testClientName")
+                .orderId("testOrderId")
+                .product("testProductName")
+                .amount(new BigDecimal(10.05))
+                .build();
+
+        this.channels.input().send(new GenericMessage<>(message));
 
         assertThat(messages.size()).isEqualTo(1);
-        ProductABillingMessage productABillingMessage1 = objectMapper.readValue((String) (messages.poll().getPayload()), ProductABillingMessage.class);
-        assertThat(productABillingMessage1).usingRecursiveComparison().isEqualTo(productABillingMessage);
+        BillingMessage result = objectMapper.readValue((String) (messages.poll().getPayload()), BillingMessage.class);
+        assertThat(result).usingRecursiveComparison().isEqualTo(result);
     }
 }
 
